@@ -1,27 +1,33 @@
 import React from "react";
-import useApiFetch from "../Hooks/useApiFetch";
 import Highlighter from "react-highlight-words";
+import useStore from "../store";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router";
+import { FaShoppingCart, FaTrash } from "react-icons/fa";
 
 const ProductList = () => {
-  const [search, setSearch] = React.useState("");
+  const [search, setSearch] = useState("");
+  const navigate = useNavigate();
+
   const {
-    data: products,
+    products,
     isLoading,
     error,
-  } = useApiFetch("http://localhost:3500/items");
+    cart,
+    addToCart,
+    removeFromCart,
+    fetchProducts,
+  } = useStore();
 
-  if (isLoading)
-    return (
-      <div className="text-3xl text-orange-500 text-center">Loading...</div>
-    );
-  if (error)
-    return (
-      <div className="text-3xl text-red-500 text-center">Error: {error}</div>
-    );
+  useEffect(() => {
+    fetchProducts();
+  }, [fetchProducts]);
 
   const filteredProducts = products.filter((product) =>
     product.name.toLowerCase().includes(search.toLowerCase())
   );
+
+  const isInCart = (productId) => cart.includes(productId);
 
   return (
     <div className="max-w-7xl mx-auto px-4">
@@ -42,34 +48,58 @@ const ProductList = () => {
         </div>
       )}
       <ul className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredProducts.map((product) => (
-          <li key={product.id} className="bg-slate-100 shadow-lg rounded-lg ">
-            <img
-              src={product.image}
-              alt={product.name}
-              className="w-full h-56 object-cover"
-            />
-            <div className="p-4">
-              <h3 className="text-xl font-bold text-black ">
-                <Highlighter
-                  highlightClassName="text-emerald-500 bg-slate-100"
-                  searchWords={[search]}
-                  textToHighlight={product.name}
-                />
-              </h3>
-              <p className="text-gray-700 mt-2">{product.description}</p>
-              <div className="mt-4">
-                <span className="text-gray-900 font-bold">
-                  ${product.price}
-                </span>
+        {filteredProducts.map((product) => {
+          return (
+            <li key={product.id} className="bg-slate-100 shadow-lg rounded-lg ">
+              <img
+                src={product.image}
+                alt={product.name}
+                className="w-full h-56 object-cover"
+              />
+              <div className="p-4">
+                <h3 className="text-xl font-bold text-black ">
+                  <Highlighter
+                    highlightClassName="text-emerald-500 bg-slate-100"
+                    searchWords={[search]}
+                    textToHighlight={product.name}
+                  />
+                </h3>
+                <p className="text-gray-700 mt-2">{product.description}</p>
+                <div className="mt-4">
+                  <span className="text-gray-900 font-bold">
+                    ${product.price}
+                  </span>
+                </div>
+                {isInCart(product.id) ? (
+                  <div className="h-12 w-24 flex items-center justify-between">
+                    <button
+                      className="flex items-center justify-center p-1 text-white h-full w-2/3 rounded-l-lg bg-orange-700 hover:bg-orange-500 border-r"
+                      onClick={() => navigate("/cart")}
+                    >
+                      Visit <FaShoppingCart className="inline ml-1" />
+                    </button>
+                    <button
+                      className="flex items-center justify-center p-1 rounded-r-lg h-full w-1/3 text-red-500 bg-orange-700 hover:bg-red-500 hover:text-white"
+                      onClick={() => removeFromCart(product.id)}
+                    >
+                      <FaTrash />
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    className="mt-4 text-white py-2 px-4 rounded bg-gray-400 hover:bg-orange-700"
+                    onClick={() => addToCart(product.id)}
+                  >
+                    Add to Cart
+                  </button>
+                )}
               </div>
-              <button className="mt-4 bg-slate-600 text-white py-2 px-4 rounded hover:bg-orange-700">
-                Add to Cart
-              </button>
-            </div>
-          </li>
-        ))}
+            </li>
+          );
+        })}
       </ul>
+      {error && <div className="text-red-500 text-center">{error}</div>}
+      {isLoading && <div className="text-gray-500 text-center">Loading...</div>}
     </div>
   );
 };
